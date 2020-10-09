@@ -25,9 +25,12 @@ errorHandeler = (err, req, res, next) => {
   //Mongoose Validation error
     if (err.name === 'ValidationError') {
         
-        const message = Object.values(err.errors).map(val => val.message);
+        //const message = Object.values(err.errors).map(val => val.message);
+        const message = err.errors[Object.keys(err.errors)[0]].message;
         error = new ErrorResponse(message, 400);
-}
+    }
+  
+  console.log(err)
   res.status(error.statusCode || 500).json({
     sucsuess: false,
       error: error.message || "Server Error",

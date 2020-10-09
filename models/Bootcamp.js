@@ -1,5 +1,6 @@
 const mongoose = require('mongoose')
 const slugify = require('slugify')
+const geocoder = require('../utils/geocoder')
 
 const BootcampSchema = new mongoose.Schema(
   {
@@ -53,7 +54,7 @@ const BootcampSchema = new mongoose.Schema(
       city: String,
       state: String,
       zipcode: String,
-      country: String,
+      country: String
     },
     careers: {
       // Array of strings
@@ -116,4 +117,49 @@ BootcampSchema.pre('save', function (next) {
   next();
 })
 
-module.exports = mongoose.model('bootcamp', BootcampSchema)
+// GeoCode & Create location field
+BootcampSchema.pre('save', async function (next) {
+  const loc = await geocoder.geocode(this.address);
+  this.location = {
+    type: 'Point',
+    coordinates: [loc[0].longitude, loc[0].latitude],
+    formattedAddress: loc[0].formattedAddress,
+    street: loc[0].streetName,
+    city: loc[0].city,
+    state: loc[0].stateCode,
+    zipcode: loc[0].zipcode,
+    country: loc[0].countryCode,
+  }
+
+  // Dont save address in deleteBootcamp
+  this.address = undefined;
+  next();
+});
+
+// delete courses when a bootcamp will be deleteData
+// cascading deleteData
+
+BootcampSchema.pre('remove', async function (next) {
+  BootcampSchema.coursesToDelete = await this.model('Course').find({ bootcamp: this._id })
+
+  console.log(`boot camp ${ this._id } have been deleted, and associated courses [${ BootcampSchema.coursesToDelete.map(val => val.title) }] has been deleted as well.`)
+  await this.model('Course').deleteMany({ bootcamp: this._id })
+  
+  next();
+})
+
+// Reverse populate with virtuals
+BootcampSchema.virtual('courses', {
+  ref: 'Course', // in Courses
+  localField: '_id', // find courses where _id field
+  foreignField: 'bootcamp', // is equal to bootcamps _id's
+  justOne: false
+});
+
+
+module.exports.Bootcamp = mongoose.model('Bootcamp', BootcampSchema)
+module.exports.BootcampSchema = BootcampSchema
+
+BootcampSchema.virtual('avragedTuition').get(function (next) {
+  return 'hi'
+})
