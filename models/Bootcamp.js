@@ -160,6 +160,6 @@ BootcampSchema.virtual('courses', {
 module.exports.Bootcamp = mongoose.model('Bootcamp', BootcampSchema)
 module.exports.BootcampSchema = BootcampSchema
 
-BootcampSchema.virtual('avragedTuition').get(function (next) {
-  return 'hi'
-})
+// BootcampSchema.virtual('avragedTuition').get(function (next) {
+//   return 'hi'
+// })
